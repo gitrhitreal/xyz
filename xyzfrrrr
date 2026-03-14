@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Saffron & Smoke</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;0,700;1,300;1,500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ────────────────────────────────────────────
+   DESIGN TOKENS
+   ──────────────────────────────────────────── */
+:root{
+  --bg:#0C0A08; --surface:#151210; --surface2:#1E1A16;
+  --border:rgba(255,220,150,.09);
+  --primary:#D4963A; --pg:rgba(212,150,58,.35);
+  --accent:#E8C87A;  --accent2:#B05A2F;
+  --text:#F2EAD8; --mid:#C4B49A; --dim:#7A6A56;
+  --fd:'Cormorant Garamond',serif; --fb:'Outfit',sans-serif;
+  --r:16px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{font-family:var(--fb);background:var(--bg);color:var(--text);
+  min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.025;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='250' height='250' filter='url(%23g)'/%3E%3C/svg%3E")}
+#amb{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 65% 45% at 85% 5%,rgba(212,150,58,.11) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 55% at 5% 95%,rgba(176,90,47,.09) 0%,transparent 55%)}
+#cv{position:fixed;inset:0;z-index:9998;pointer-events:none}
+
+/* ── SCREENS ── */
+.scr{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:flex-start;
+  padding:max(2rem,env(safe-area-inset-top)) 1.4rem max(2rem,env(safe-area-inset-bottom));
+  opacity:0;transform:translateY(26px) scale(.98);
+  transition:opacity .45s cubic-bezier(.4,0,.2,1),transform .45s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;overflow-y:auto}
+.scr.active{opacity:1;transform:none;pointer-events:all}
+.scr.out{opacity:0;transform:translateY(-16px) scale(1.01)}
+.scr.centred{justify-content:center}
+
+/* ── BACK ── */
+#bk{position:fixed;top:max(.9rem,env(safe-area-inset-top));left:.9rem;z-index:200;
+  display:none;align-items:center;gap:.35rem;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  color:var(--dim);padding:.38rem .78rem;border-radius:99px;
+  font-family:var(--fb);font-size:.73rem;letter-spacing:.04em;
+  cursor:pointer;backdrop-filter:blur(16px);transition:color .2s,border-color .2s}
+#bk.show{display:flex}
+#bk:hover{color:var(--mid);border-color:rgba(212,150,58,.3)}
+
+/* ── BUTTONS ── */
+.btn{display:flex;align-items:center;justify-content:center;gap:.48rem;
+  padding:.9rem 1.7rem;border-radius:99px;
+  font-family:var(--fb);font-size:.9rem;font-weight:500;letter-spacing:.02em;
+  cursor:pointer;border:none;position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;width:100%}
+.btn::before{content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.13),transparent);opacity:0;transition:opacity .2s}
+.btn:hover::before{opacity:1}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:scale(.97)}
+.btn-g{background:linear-gradient(135deg,var(--primary),var(--accent2));color:#fff;
+  box-shadow:0 6px 26px var(--pg),0 2px 8px rgba(0,0,0,.4)}
+.btn-g:hover{box-shadow:0 10px 36px var(--pg),0 4px 12px rgba(0,0,0,.5)}
+.btn-o{background:rgba(255,255,255,.04);color:var(--mid);
+  border:1px solid var(--border);backdrop-filter:blur(12px)}
+.btn-o:hover{border-color:rgba(212,150,58,.3);color:var(--text)}
+.btn-red{background:rgba(180,40,40,.15);color:#e07070;
+  border:1px solid rgba(180,40,40,.25)}
+.btn-red:hover{background:rgba(180,40,40,.25);border-color:rgba(180,40,40,.4);color:#f09090}
+
+/* ════════════════════════════
+   HOME SCREEN
+════════════════════════════ */
+#home{justify-content:center;text-align:center}
+.hk{font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:var(--primary);
+  margin-bottom:1rem;opacity:0;animation:fup .6s .1s ease forwards}
+
+/* Logo display — shows either uploaded image or emoji fallback */
+.home-logo-wrap{
+  position:relative;display:inline-block;
+  margin-bottom:.45rem;
+  opacity:0;animation:fup .5s .05s ease forwards}
+.home-logo-img{
+  width:90px;height:90px;border-radius:50%;object-fit:cover;
+  border:2px solid var(--border);
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+  display:none}
+.home-logo-emoji{
+  font-size:clamp(2.8rem,9vw,4.4rem);line-height:1;
+  display:block;animation:float 4s ease-in-out infinite}
+.hn{font-family:var(--fd);font-size:clamp(2.3rem,9vw,3.8rem);font-weight:500;line-height:1;
+  background:linear-gradient(155deg,var(--text) 15%,var(--accent) 55%,var(--primary));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:.42rem;opacity:0;animation:fup .6s .15s ease forwards}
+.ht{font-family:var(--fd);font-style:italic;font-size:.98rem;font-weight:300;color:var(--mid);
+  margin-bottom:2.4rem;opacity:0;animation:fup .6s .22s ease forwards}
+.hr{width:46px;height:1px;background:linear-gradient(90deg,transparent,var(--primary),transparent);
+  margin:0 auto 2.4rem;opacity:0;animation:fup .5s .18s ease forwards}
+.bst{display:flex;flex-direction:column;gap:.75rem;width:100%;max-width:300px;
+  opacity:0;animation:fup .6s .32s ease forwards}
+
+/* Subtle editor gear icon bottom-right */
+#editor-fab{
+  position:fixed;bottom:max(1.2rem,env(safe-area-inset-bottom));right:1.2rem;
+  z-index:150;
+  width:42px;height:42px;border-radius:50%;
+  background:rgba(255,255,255,.05);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;cursor:pointer;
+  backdrop-filter:blur(16px);
+  transition:all .2s;
+  opacity:.5}
+#editor-fab:hover{opacity:1;border-color:rgba(212,150,58,.4);
+  box-shadow:0 4px 20px rgba(0,0,0,.4)}
+
+/* ════════════════════════════
+   SURPRISE CATEGORY PICKER
+════════════════════════════ */
+#surp-pick{justify-content:center;text-align:center}
+.sp-eyebrow{font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--primary);
+  margin-bottom:.4rem;margin-top:max(3rem,env(safe-area-inset-top))}
+.sp-title{font-family:var(--fd);font-size:clamp(1.6rem,6vw,2.2rem);font-weight:500;margin-bottom:.4rem}
+.sp-sub{font-size:.82rem;color:var(--mid);margin-bottom:1.8rem}
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;width:100%;max-width:360px}
+.cat-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;
+  padding:1.2rem .8rem;border-radius:20px;background:var(--surface);border:1px solid var(--border);
+  color:var(--mid);font-family:var(--fb);font-size:.82rem;font-weight:500;
+  cursor:pointer;transition:all .22s;position:relative;overflow:hidden}
+.cat-btn::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at center,var(--pg),transparent 70%);opacity:0;transition:opacity .3s}
+.cat-btn:hover{border-color:rgba(212,150,58,.35);color:var(--text);transform:translateY(-2px)}
+.cat-btn:hover::after{opacity:.6}
+.cat-btn .ce{font-size:1.8rem;line-height:1}
+.cat-btn.all-btn{grid-column:1/-1;flex-direction:row;gap:.6rem;padding:.95rem}
+
+/* ════════════════════════════
+   SURPRISE RESULT
+════════════════════════════ */
+#surp-res{justify-content:flex-start;padding-top:max(3.5rem,env(safe-area-inset-top))}
+.sr-eyebrow{font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--primary);
+  text-align:center;margin-bottom:.5rem;margin-top:.5rem}
+.sr-head{font-family:var(--fd);font-size:clamp(1.6rem,6vw,2.2rem);font-weight:500;
+  text-align:center;line-height:1.1;margin-bottom:1.1rem}
+.sr-cards{display:flex;flex-direction:column;gap:.75rem;width:100%;max-width:400px}
+.mini-card{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  padding:1.1rem 1.2rem;display:flex;align-items:center;gap:1rem;position:relative;overflow:hidden}
+.mini-card::before{content:'';position:absolute;top:0;left:0;right:0;height:60px;
+  background:radial-gradient(ellipse at 50% 0%,rgba(212,150,58,.1) 0%,transparent 70%)}
+.mc-inner{position:relative;z-index:1;display:flex;align-items:center;gap:1rem;width:100%}
+.mc-img{width:54px;height:54px;border-radius:14px;background:var(--surface2);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+  font-size:1.7rem;flex-shrink:0;overflow:hidden}
+.mc-img img{width:100%;height:100%;object-fit:cover}
+.mc-body{flex:1;text-align:left}
+.mc-cat{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--primary);margin-bottom:.18rem}
+.mc-name{font-family:var(--fd);font-size:1.15rem;font-weight:500;line-height:1.2;margin-bottom:.18rem}
+.mc-desc{font-size:.75rem;color:var(--mid);line-height:1.4;margin-bottom:.3rem}
+.mc-price{font-family:var(--fd);font-size:1rem;color:var(--accent)}
+.sr-act{display:flex;flex-direction:column;gap:.6rem;width:100%;max-width:400px;
+  margin-top:.5rem;padding-bottom:1rem}
+
+/* ════════════════════════════
+   QUIZ
+════════════════════════════ */
+#quiz{justify-content:flex-start;padding-top:max(3rem,env(safe-area-inset-top))}
+.qwrap{width:100%;max-width:450px;display:flex;flex-direction:column;gap:1.4rem;padding-top:.5rem}
+.qmeta{display:flex;align-items:center;justify-content:space-between;width:100%}
+.qcount{font-size:.7rem;color:var(--dim);letter-spacing:.06em;white-space:nowrap}
+.qtrack{flex:1;height:3px;background:var(--surface2);border-radius:99px;
+  margin-left:.85rem;overflow:hidden}
+.qfill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--primary),var(--accent));
+  border-radius:99px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.qemoji{font-size:2rem;text-align:center}
+.qtxt{font-family:var(--fd);font-size:clamp(1.35rem,5vw,1.85rem);font-weight:500;
+  text-align:center;line-height:1.25}
+.qsub{font-size:.78rem;color:var(--mid);text-align:center;margin-top:-.6rem}
+.ogrid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;width:100%}
+.ogrid.single{grid-template-columns:1fr}
+.opt{padding:.78rem .65rem;border-radius:var(--r);background:var(--surface);
+  border:1px solid var(--border);color:var(--mid);font-family:var(--fb);
+  font-size:.82rem;cursor:pointer;text-align:center;line-height:1.35;
+  transition:all .2s;position:relative;overflow:hidden}
+.opt::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at center,var(--pg),transparent 70%);opacity:0;transition:opacity .3s}
+.opt:hover{border-color:rgba(212,150,58,.3);color:var(--text);transform:translateY(-1px)}
+.opt.chosen{border-color:var(--primary);background:rgba(212,150,58,.1);color:var(--text);
+  box-shadow:0 0 0 1px var(--primary),0 4px 18px var(--pg)}
+.opt.chosen::after,.opt.multi-chosen::after{opacity:1}
+.opt.multi-chosen{border-color:var(--accent);background:rgba(232,200,122,.1);color:var(--text);
+  box-shadow:0 0 0 1px var(--accent)}
+.qnext{width:100%;background:linear-gradient(135deg,var(--primary),var(--accent2));color:#fff;
+  padding:.88rem;border-radius:99px;font-family:var(--fb);font-size:.9rem;font-weight:500;
+  cursor:pointer;border:none;box-shadow:0 6px 22px var(--pg);
+  transition:all .22s;opacity:0;pointer-events:none;transform:translateY(5px)}
+.qnext.ready{opacity:1;pointer-events:all;transform:none}
+.qnext:hover{transform:translateY(-1px);box-shadow:0 10px 30px var(--pg)}
+.skip-link{text-align:center;font-size:.73rem;color:var(--dim);cursor:pointer;
+  letter-spacing:.04em;transition:color .2s}
+.skip-link:hover{color:var(--mid)}
+
+/* ════════════════════════════
+   QUIZ RESULT
+════════════════════════════ */
+#result{justify-content:flex-start;padding-top:max(3.5rem,env(safe-area-inset-top))}
+.res-wrap{width:100%;max-width:400px;display:flex;flex-direction:column;gap:1.1rem;padding-bottom:1.5rem}
+.res-eyebrow{font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--primary);text-align:center}
+.res-head{font-family:var(--fd);font-size:clamp(1.6rem,6vw,2.2rem);font-weight:500;
+  text-align:center;line-height:1.1}
+.main-card{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:22px;
+  padding:1.6rem 1.35rem 1.35rem;position:relative;overflow:hidden;
+  box-shadow:0 18px 55px rgba(0,0,0,.5)}
+.main-card::before{content:'';position:absolute;top:0;left:0;right:0;height:100px;
+  background:radial-gradient(ellipse at 50% 0%,rgba(212,150,58,.14) 0%,transparent 70%)}
+.mci{position:relative;z-index:1;text-align:center}
+.big-img{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--surface2),var(--bg));
+  border:2px solid var(--border);display:flex;align-items:center;justify-content:center;
+  font-size:2.4rem;margin:0 auto .8rem;box-shadow:0 8px 28px rgba(0,0,0,.4);overflow:hidden}
+.big-img img{width:100%;height:100%;object-fit:cover}
+.mpill{display:inline-flex;align-items:center;gap:.3rem;background:rgba(212,150,58,.14);
+  border:1px solid rgba(212,150,58,.3);color:var(--accent);font-size:.67rem;font-weight:600;
+  letter-spacing:.08em;padding:.2rem .65rem;border-radius:99px;margin-bottom:.6rem;text-transform:uppercase}
+.mdot{width:5px;height:5px;background:var(--primary);border-radius:50%;animation:pulse 1.6s infinite}
+.bname{font-family:var(--fd);font-size:1.55rem;font-weight:500;margin-bottom:.25rem}
+.bdesc{color:var(--mid);font-size:.82rem;line-height:1.6;margin-bottom:.8rem}
+.bprice{font-family:var(--fd);font-size:1.35rem;font-weight:300;color:var(--accent);margin-bottom:.8rem}
+.trow{display:flex;flex-wrap:wrap;gap:.32rem;justify-content:center}
+.pill{font-size:.65rem;padding:.16rem .55rem;border-radius:99px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);
+  color:var(--dim);text-transform:capitalize}
+.add-section{width:100%}
+.add-label{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:.5rem;padding-left:.2rem}
+.add-cards{display:flex;flex-direction:column;gap:.5rem}
+.res-act{display:flex;flex-direction:column;gap:.6rem;width:100%;padding-bottom:.5rem}
+
+/* ════════════════════════════
+   EDITOR PANEL (full-screen overlay)
+════════════════════════════ */
+#editor{
+  position:fixed;inset:0;z-index:500;
+  background:var(--bg);
+  display:flex;flex-direction:column;
+  transform:translateY(100%);
+  transition:transform .45s cubic-bezier(.4,0,.2,1);
+  overflow:hidden}
+#editor.open{transform:translateY(0)}
+
+.ed-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:max(1.2rem,env(safe-area-inset-top)) 1.4rem 1rem;
+  border-bottom:1px solid var(--border);
+  background:var(--surface);
+  flex-shrink:0}
+.ed-title{font-family:var(--fd);font-size:1.5rem;font-weight:500}
+.ed-close{background:none;border:none;color:var(--mid);font-size:1.4rem;
+  cursor:pointer;padding:.3rem;transition:color .2s;line-height:1}
+.ed-close:hover{color:var(--text)}
+
+.ed-tabs{
+  display:flex;border-bottom:1px solid var(--border);
+  background:var(--surface);flex-shrink:0}
+.ed-tab{flex:1;padding:.75rem .5rem;font-family:var(--fb);font-size:.78rem;
+  font-weight:500;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--dim);background:none;border:none;cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .2s}
+.ed-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+.ed-body{flex:1;overflow-y:auto;padding:1.4rem}
+
+/* ── BRANDING TAB ── */
+.ed-section{margin-bottom:2rem}
+.ed-section-title{font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:.9rem}
+
+/* Logo upload area */
+.logo-upload-area{
+  display:flex;flex-direction:column;align-items:center;gap:1rem;
+  padding:1.5rem;border:2px dashed var(--border);border-radius:20px;
+  background:var(--surface);transition:border-color .2s,background .2s;cursor:pointer}
+.logo-upload-area:hover,.logo-upload-area.drag-over{
+  border-color:rgba(212,150,58,.45);background:rgba(212,150,58,.05)}
+.logo-preview{
+  width:80px;height:80px;border-radius:50%;
+  background:var(--surface2);border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2.2rem;overflow:hidden;transition:border-color .2s}
+.logo-preview img{width:100%;height:100%;object-fit:cover}
+.logo-upload-hint{font-size:.78rem;color:var(--mid);text-align:center;line-height:1.5}
+.logo-upload-hint strong{color:var(--text);display:block;margin-bottom:.2rem}
+#logo-file-input{display:none}
+.logo-actions{display:flex;gap:.6rem;justify-content:center}
+
+/* Emoji fallback row */
+.emoji-picker{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem}
+.emoji-opt{font-size:1.6rem;padding:.4rem;border-radius:10px;cursor:pointer;
+  background:var(--surface2);border:1px solid var(--border);transition:all .18s;line-height:1}
+.emoji-opt:hover,.emoji-opt.picked{border-color:var(--primary);background:rgba(212,150,58,.15)}
+
+/* Text fields */
+.field-row{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
+.field-label{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.field-input{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:.65rem .9rem;color:var(--text);font-family:var(--fb);font-size:.9rem;
+  outline:none;transition:border-color .2s;width:100%}
+.field-input:focus{border-color:rgba(212,150,58,.45)}
+.field-input::placeholder{color:var(--dim)}
+
+/* ── MENU EDITOR TAB ── */
+.menu-filter-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.1rem}
+.filter-pill{font-size:.73rem;padding:.32rem .8rem;border-radius:99px;
+  background:var(--surface);border:1px solid var(--border);color:var(--mid);
+  cursor:pointer;transition:all .18s;font-family:var(--fb)}
+.filter-pill.active{background:rgba(212,150,58,.15);border-color:var(--primary);color:var(--text)}
+
+/* Drag list */
+.drag-list{display:flex;flex-direction:column;gap:.6rem;min-height:40px}
+.drag-item{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:.85rem 1rem;display:flex;align-items:center;gap:.8rem;
+  cursor:grab;user-select:none;transition:box-shadow .2s,border-color .2s,opacity .2s;
+  position:relative}
+.drag-item:active{cursor:grabbing}
+.drag-item.dragging{opacity:.4;box-shadow:none}
+.drag-item.drag-over-top{border-top:2px solid var(--primary)}
+.drag-item.drag-over-bottom{border-bottom:2px solid var(--primary)}
+.drag-handle{color:var(--dim);font-size:1rem;flex-shrink:0;line-height:1;
+  display:flex;flex-direction:column;gap:2px}
+.drag-handle span{display:block;width:16px;height:2px;background:currentColor;border-radius:2px}
+.di-img{width:40px;height:40px;border-radius:10px;background:var(--surface2);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;flex-shrink:0;overflow:hidden}
+.di-img img{width:100%;height:100%;object-fit:cover}
+.di-body{flex:1;min-width:0}
+.di-name{font-family:var(--fd);font-size:1rem;font-weight:500;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.di-meta{font-size:.72rem;color:var(--mid)}
+.di-badge{font-size:.62rem;padding:.15rem .5rem;border-radius:99px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
+  color:var(--dim);text-transform:capitalize;margin-left:.3rem}
+.di-actions{display:flex;gap:.4rem;flex-shrink:0}
+.di-btn{background:none;border:none;color:var(--dim);cursor:pointer;
+  font-size:.9rem;padding:.25rem;border-radius:6px;transition:color .18s,background .18s}
+.di-btn:hover{color:var(--text);background:rgba(255,255,255,.07)}
+.di-btn.del:hover{color:#e07070;background:rgba(180,40,40,.15)}
+
+/* Toggle switch for active/hidden */
+.di-toggle{position:relative;width:32px;height:18px;flex-shrink:0}
+.di-toggle input{opacity:0;width:0;height:0;position:absolute}
+.di-toggle-slider{position:absolute;inset:0;background:var(--surface2);border-radius:99px;
+  cursor:pointer;transition:.2s;border:1px solid var(--border)}
+.di-toggle-slider::before{content:'';position:absolute;width:12px;height:12px;
+  border-radius:50%;background:var(--dim);left:2px;top:50%;transform:translateY(-50%);transition:.2s}
+.di-toggle input:checked + .di-toggle-slider{background:rgba(212,150,58,.25);
+  border-color:var(--primary)}
+.di-toggle input:checked + .di-toggle-slider::before{background:var(--primary);left:16px}
+.drag-item.hidden-item{opacity:.45}
+
+/* Add item form */
+.add-item-form{
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:1.2rem;margin-top:1rem;display:none;flex-direction:column;gap:.85rem}
+.add-item-form.open{display:flex}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.form-row.single{grid-template-columns:1fr}
+.add-form-actions{display:flex;gap:.6rem}
+.add-form-actions .btn{padding:.7rem 1.2rem;font-size:.82rem}
+
+/* Save toast */
+.toast{
+  position:fixed;bottom:max(1.5rem,env(safe-area-inset-bottom));
+  left:50%;transform:translateX(-50%) translateY(60px);
+  z-index:9000;
+  background:var(--surface2);border:1px solid rgba(212,150,58,.3);
+  color:var(--text);padding:.55rem 1.2rem;border-radius:99px;
+  font-size:.82rem;font-weight:500;
+  transition:transform .3s,opacity .3s;opacity:0;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* ── ANIMATIONS ── */
+@keyframes fup{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.65)}}
+@keyframes rollspin{from{transform:rotate(-9deg) scale(.93)}to{transform:rotate(9deg) scale(1.07)}}
+
+@media(max-width:360px){.ogrid,.cat-grid,.form-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="amb"></div>
+<canvas id="cv"></canvas>
+<button id="bk">← Back</button>
+
+<!-- ════ HOME ════ -->
+<section class="scr centred active" id="home">
+  <p class="hk" id="home-kicker">Fine Dining Experience</p>
+  <div class="home-logo-wrap">
+    <img class="home-logo-img" id="home-logo-img" src="" alt="logo"/>
+    <span class="home-logo-emoji" id="home-logo-emoji">🪔</span>
+  </div>
+  <h1 class="hn" id="home-name">Saffron &amp; Smoke</h1>
+  <p class="ht" id="home-tagline">Where ancient spice meets open flame</p>
+  <div class="hr"></div>
+  <div class="bst">
+    <button class="btn btn-g" id="btn-surprise"><span>🎲</span> Surprise Me</button>
+    <button class="btn btn-o" id="btn-quiz"><span>✦</span> Help Me Choose</button>
+  </div>
+</section>
+
+<!-- Floating editor button -->
+<button id="editor-fab" title="Edit menu & branding">⚙️</button>
+
+<!-- ════ SURPRISE: CATEGORY PICKER ════ -->
+<section class="scr" id="surp-pick">
+  <p class="sp-eyebrow">Surprise Me</p>
+  <h2 class="sp-title">What are you after?</h2>
+  <p class="sp-sub">Pick a category and we'll pick the dish</p>
+  <div class="cat-grid">
+    <button class="cat-btn" data-cat="main"><span class="ce">🍛</span>Mains</button>
+    <button class="cat-btn" data-cat="drink"><span class="ce">🥂</span>Drinks</button>
+    <button class="cat-btn" data-cat="dessert"><span class="ce">🍮</span>Desserts</button>
+    <button class="cat-btn" data-cat="bread"><span class="ce">🫓</span>Breads</button>
+    <button class="cat-btn" data-cat="other"><span class="ce">🥙</span>Starters &amp; Sides</button>
+    <button class="cat-btn all-btn" data-cat="all"><span class="ce">🎲</span>Anything goes!</button>
+  </div>
+</section>
+
+<!-- ════ SURPRISE: RESULT ════ -->
+<section class="scr" id="surp-res">
+  <p class="sr-eyebrow">Your lucky pick</p>
+  <h2 class="sr-head" id="sr-head">Tonight's pick ✦</h2>
+  <div class="sr-cards" id="sr-cards"></div>
+  <div class="sr-act">
+    <button class="btn btn-g" id="btn-reroll">🎲 Roll Again</button>
+    <button class="btn btn-o" id="btn-diff-cat">Try a Different Category</button>
+    <button class="btn btn-o" id="btn-home-s">← Home</button>
+  </div>
+</section>
+
+<!-- ════ QUIZ ════ -->
+<section class="scr" id="quiz">
+  <div class="qwrap">
+    <div class="qmeta">
+      <span class="qcount" id="qcount">1 / 5</span>
+      <div class="qtrack"><div class="qfill" id="qfill" style="width:20%"></div></div>
+    </div>
+    <div class="qemoji" id="qemoji">✨</div>
+    <h2 class="qtxt" id="qtxt">—</h2>
+    <p class="qsub" id="qsub"></p>
+    <div class="ogrid" id="qopts"></div>
+    <button class="qnext" id="qnext">Continue →</button>
+    <span class="skip-link" id="skip-link">Skip this question →</span>
+  </div>
+</section>
+
+<!-- ════ QUIZ RESULT ════ -->
+<section class="scr" id="result">
+  <div class="res-wrap">
+    <p class="res-eyebrow">Your perfect order</p>
+    <h2 class="res-head">We found your match.</h2>
+    <div class="main-card">
+      <div class="mci">
+        <div class="big-img" id="rimg">🍽️</div>
+        <div class="mpill"><span class="mdot"></span><span id="rpct">96% match</span></div>
+        <div class="bname" id="rname">—</div>
+        <div class="bdesc" id="rdesc">—</div>
+        <div class="bprice" id="rprice">—</div>
+        <div class="trow" id="rtags"></div>
+      </div>
+    </div>
+    <div class="add-section" id="addon-section" style="display:none">
+      <p class="add-label">Goes perfectly with</p>
+      <div class="add-cards" id="addon-cards"></div>
+    </div>
+    <div class="res-act">
+      <button class="btn btn-g" id="btn-redo">Try Quiz Again</button>
+      <button class="btn btn-o" id="btn-home-r">← Home</button>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     EDITOR PANEL
+════════════════════════════════════════ -->
+<div id="editor">
+  <div class="ed-header">
+    <span class="ed-title">Restaurant Editor</span>
+    <button class="ed-close" id="ed-close">✕</button>
+  </div>
+  <div class="ed-tabs">
+    <button class="ed-tab active" data-tab="brand">🎨 Branding</button>
+    <button class="ed-tab" data-tab="menu">🍽️ Menu</button>
+  </div>
+  <div class="ed-body">
+
+    <!-- ── BRANDING TAB ── -->
+    <div id="tab-brand">
+      <div class="ed-section">
+        <div class="ed-section-title">Restaurant Logo</div>
+
+        <!-- Drag & drop / click upload -->
+        <div class="logo-upload-area" id="logo-drop-zone">
+          <div class="logo-preview" id="logo-preview-circle">🪔</div>
+          <div class="logo-upload-hint">
+            <strong>Upload your logo</strong>
+            Drag & drop an image here, or tap to browse<br>
+            <span style="font-size:.7rem;opacity:.6">PNG, JPG, SVG — square works best</span>
+          </div>
+          <input type="file" id="logo-file-input" accept="image/*"/>
+          <div class="logo-actions">
+            <button class="btn btn-o btn-sm" id="btn-pick-logo" style="width:auto;padding:.5rem 1.1rem;font-size:.78rem">Browse files</button>
+            <button class="btn btn-red btn-sm" id="btn-remove-logo" style="width:auto;padding:.5rem 1.1rem;font-size:.78rem;display:none">Remove</button>
+          </div>
+        </div>
+
+        <!-- Emoji fallback -->
+        <div style="margin-top:1rem">
+          <div class="ed-section-title" style="margin-bottom:.5rem">Or choose an emoji logo</div>
+          <div class="emoji-picker" id="emoji-picker">
+            🪔 🔥 🍽️ 🌿 🫕 🥘 🍜 🫙 ⭐ 🌙 🌺 🏮 🧿 🦚 🌊 🍁 ✨ 🦋
+          </div>
+        </div>
+      </div>
+
+      <div class="ed-section">
+        <div class="ed-section-title">Restaurant Details</div>
+        <div class="field-row">
+          <label class="field-label">Restaurant Name</label>
+          <input class="field-input" id="ed-name" placeholder="e.g. Saffron & Smoke" value="Saffron &amp; Smoke"/>
+        </div>
+        <div class="field-row">
+          <label class="field-label">Tagline</label>
+          <input class="field-input" id="ed-tagline" placeholder="e.g. Where spice meets flame" value="Where ancient spice meets open flame"/>
+        </div>
+        <div class="field-row">
+          <label class="field-label">Kicker / Category Label</label>
+          <input class="field-input" id="ed-kicker" placeholder="e.g. Fine Dining Experience" value="Fine Dining Experience"/>
+        </div>
+      </div>
+
+      <button class="btn btn-g" id="btn-save-brand" style="margin-top:.5rem">Save Branding ✓</button>
+    </div>
+
+    <!-- ── MENU TAB ── -->
+    <div id="tab-menu" style="display:none">
+
+      <!-- Category filter -->
+      <div class="menu-filter-row" id="menu-filter-row">
+        <button class="filter-pill active" data-filter="all">All</button>
+        <button class="filter-pill" data-filter="main">Mains</button>
+        <button class="filter-pill" data-filter="drink">Drinks</button>
+        <button class="filter-pill" data-filter="dessert">Desserts</button>
+        <button class="filter-pill" data-filter="bread">Breads</button>
+        <button class="filter-pill" data-filter="other">Sides</button>
+      </div>
+
+      <!-- Drag list -->
+      <div class="drag-list" id="drag-list"></div>
+
+      <!-- Add new item -->
+      <button class="btn btn-o" id="btn-add-item" style="margin-top:1rem">+ Add New Item</button>
+
+      <div class="add-item-form" id="add-item-form">
+        <div class="form-row">
+          <div class="field-row" style="margin:0">
+            <label class="field-label">Name</label>
+            <input class="field-input" id="new-name" placeholder="Dish name"/>
+          </div>
+          <div class="field-row" style="margin:0">
+            <label class="field-label">Price</label>
+            <input class="field-input" id="new-price" placeholder="e.g. £12"/>
+          </div>
+        </div>
+        <div class="field-row form-row single" style="margin:0">
+          <label class="field-label">Description</label>
+          <input class="field-input" id="new-desc" placeholder="Short description"/>
+        </div>
+        <div class="form-row">
+          <div class="field-row" style="margin:0">
+            <label class="field-label">Emoji / Icon</label>
+            <input class="field-input" id="new-img" placeholder="e.g. 🍛" maxlength="4"/>
+          </div>
+          <div class="field-row" style="margin:0">
+            <label class="field-label">Category</label>
+            <select class="field-input" id="new-cat">
+              <option value="main">Main</option>
+              <option value="drink">Drink</option>
+              <option value="dessert">Dessert</option>
+              <option value="bread">Bread</option>
+              <option value="other">Side / Starter</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row form-row single" style="margin:0">
+          <label class="field-label">Tags (comma separated)</label>
+          <input class="field-input" id="new-tags" placeholder="e.g. spicy, vegan, light, sharing"/>
+        </div>
+        <div class="add-form-actions">
+          <button class="btn btn-g" id="btn-save-item">Add to Menu ✓</button>
+          <button class="btn btn-o" id="btn-cancel-item">Cancel</button>
+        </div>
+      </div>
+
+    </div><!-- /tab-menu -->
+  </div><!-- /ed-body -->
+</div><!-- /editor -->
+
+<div class="toast" id="toast"></div>
+
+<!-- ════════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════ -->
+<script>
+/* ══════════════════════════════════════════
+   ██████╗ ██████╗  █████╗ ███╗   ██╗██████╗ ██╗███╗   ██╗ ██████╗
+   ██╔══██╗██╔══██╗██╔══██╗████╗  ██║██╔══██╗██║████╗  ██║██╔════╝
+   ██████╔╝██████╔╝███████║██╔██╗ ██║██║  ██║██║██╔██╗ ██║██║  ███╗
+   ██╔══██╗██╔══██╗██╔══██║██║╚██╗██║██║  ██║██║██║╚██╗██║██║   ██║
+   ██████╔╝██║  ██║██║  ██║██║ ╚████║██████╔╝██║██║ ╚████║╚██████╔╝
+   ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝ ╚═╝╚═╝  ╚═══╝ ╚═════╝
+
+   RESTAURANT BRANDING CONFIG
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Edit these values to customise the look for your establishment.
+   Alternatively, use the ⚙️ editor panel in the bottom-right corner
+   of the live page — no code needed.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const BRANDING = {
+  name:      "Saffron & Smoke",
+  tagline:   "Where ancient spice meets open flame",
+  kicker:    "Fine Dining Experience",
+  logoEmoji: "🪔",          // shown when no image is uploaded
+  logoImage: "",            // paste a URL here to use an image logo
+  // Colours (CSS values)
+  primaryColor: "#D4963A",
+  accentColor:  "#E8C87A",
+  accent2Color: "#B05A2F",
+  bgColor:      "#0C0A08",
+};
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   END BRANDING CONFIG
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+
+/* ══════════════════════════════════════════
+   ███╗   ███╗███████╗███╗   ██╗██╗   ██╗
+   ████╗ ████║██╔════╝████╗  ██║██║   ██║
+   ██╔████╔██║█████╗  ██╔██╗ ██║██║   ██║
+   ██║╚██╔╝██║██╔══╝  ██║╚██╗██║██║   ██║
+   ██║ ╚═╝ ██║███████╗██║ ╚████║╚██████╔╝
+   ╚═╝     ╚═╝╚══════╝╚═╝  ╚═══╝ ╚═════╝
+
+   MENU DATABASE
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Add, remove or edit dishes here.
+   Each item needs: id, cat, name, img, price, desc, tags, diet
+   cat options: "main" | "drink" | "dessert" | "bread" | "other"
+   img: emoji character or full image URL
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+let MENU = [
+  /* ── MAINS ── */
+  { id:1,  cat:"main",    name:"Saffron Butter Chicken",     img:"🍛", price:"£16",
+    desc:"Free-range chicken in velvety saffron-tomato sauce, charred naan, pickled chilli",
+    tags:["spicy","meaty","saucy","brothy","comfort","cozy","rich","classic","hearty"], diet:"meat" },
+  { id:2,  cat:"main",    name:"Tandoori Lamb Chops",         img:"🍖", price:"£22",
+    desc:"Marinated 24 hrs in yoghurt & spice, stone-char finish, mint raita, pickled onion",
+    tags:["spicy","meaty","bold","dry","grilled","heavy","adventurous","treat"], diet:"meat" },
+  { id:3,  cat:"main",    name:"King Prawn Masala",           img:"🦐", price:"£19",
+    desc:"Tiger prawns, coastal tomato masala, coconut milk, curry leaf, steamed rice",
+    tags:["spicy","seafood","saucy","brothy","coastal","fresh","lively","rich"], diet:"fish" },
+  { id:4,  cat:"main",    name:"Truffle Paneer Tikka",        img:"🧀", price:"£13",
+    desc:"Smoked paneer cubes, truffle marinade, tandoor kissed, pomegranate, micro herbs",
+    tags:["vegetarian","elegant","dry","grilled","light","indulgent","refined"], diet:"vegetarian" },
+  { id:5,  cat:"main",    name:"72-Hr Short Rib Biryani",     img:"🥘", price:"£24",
+    desc:"Slow-cooked short rib, aged basmati, fried shallots, saffron milk, raita",
+    tags:["meaty","heavy","dry","treat","rich","bold","hearty","classic","indulgent"], diet:"meat" },
+  { id:6,  cat:"main",    name:"Seared Halibut",              img:"🐟", price:"£26",
+    desc:"Line-caught halibut, green chilli butter, asparagus, lemon pickle, caper oil",
+    tags:["fish","elegant","light","dry","fresh","refined","treat"], diet:"fish" },
+  { id:7,  cat:"main",    name:"Black Dal Makhani",           img:"🫕", price:"£12",
+    desc:"Slow-cooked black lentils 14 hours, butter, cream, served with warm naan",
+    tags:["vegetarian","saucy","brothy","comfort","cozy","rich","heavy","classic","hearty"], diet:"vegetarian" },
+  { id:8,  cat:"main",    name:"Smoked Lamb Seekh",           img:"🍢", price:"£15",
+    desc:"Hand-minced lamb, green chilli, ginger, served over tandoor flatbread",
+    tags:["spicy","meaty","bold","dry","grilled","casual","lively"], diet:"meat" },
+  { id:9,  cat:"main",    name:"Coconut Red Lentil Soup",     img:"🍲", price:"£8",
+    desc:"Red lentil, coconut, turmeric, lime leaf, chilli oil, warm naan",
+    tags:["vegan","light","saucy","brothy","healthy","calm","warm","comfort","earthy"], diet:"vegan" },
+  /* ── DRINKS ── */
+  { id:10, cat:"drink",   name:"Rose Lassi",                  img:"🥛", price:"£5",
+    desc:"Chilled yoghurt, rose water, crushed cardamom, edible petals",
+    tags:["sweet","cold","light","refreshing","creamy","calm","non-alcoholic"] },
+  { id:11, cat:"drink",   name:"Mango Aam Panna",             img:"🥭", price:"£5",
+    desc:"Raw mango, black salt, cumin, mint — a tangy Indian cooler",
+    tags:["tangy","cold","refreshing","fruity","light","vegan","non-alcoholic"] },
+  { id:12, cat:"drink",   name:"Saffron Old Fashioned",       img:"🥃", price:"£11",
+    desc:"Bourbon, saffron syrup, orange bitters, charred orange peel",
+    tags:["alcoholic","smoky","bold","warm","sophisticated","cocktail"] },
+  { id:13, cat:"drink",   name:"Cardamom Chai",               img:"☕", price:"£4",
+    desc:"House-spiced masala tea, whole milk, jaggery",
+    tags:["warm","spiced","cozy","comforting","non-alcoholic","classic"] },
+  { id:14, cat:"drink",   name:"Tamarind Margarita",          img:"🍹", price:"£12",
+    desc:"Tequila, tamarind shrub, tajín rim, lime",
+    tags:["alcoholic","tangy","zesty","bold","cocktail","lively","fruity"] },
+  { id:15, cat:"drink",   name:"Cucumber Jaljeera",           img:"🫙", price:"£4",
+    desc:"Cumin water, fresh cucumber, mint, black salt — zero alcohol",
+    tags:["non-alcoholic","cold","fresh","light","vegan","refreshing","tangy"] },
+  /* ── DESSERTS ── */
+  { id:16, cat:"dessert", name:"Gulab Jamun Cheesecake",      img:"🍰", price:"£9",
+    desc:"Rose-water cheesecake, warm gulab jamun, pistachio crumb, saffron glaze",
+    tags:["sweet","indulgent","rich","creamy","vegetarian","treat","cozy"] },
+  { id:17, cat:"dessert", name:"Mango Kulfi",                 img:"🍦", price:"£7",
+    desc:"Slow-set mango kulfi, chaat masala, rose jelly, pistachio",
+    tags:["sweet","cold","fruity","light","refreshing","vegetarian","fun"] },
+  { id:18, cat:"dessert", name:"Warm Jalebi & Rabri",         img:"🍩", price:"£8",
+    desc:"Crispy spiral jalebi, chilled rabri cream, saffron, cardamom",
+    tags:["sweet","indulgent","warm","crispy","classic","vegetarian","rich"] },
+  { id:19, cat:"dessert", name:"Dark Chocolate Halwa",        img:"🍫", price:"£8",
+    desc:"Semolina & dark chocolate halwa, sea salt caramel, clotted cream",
+    tags:["sweet","warm","rich","indulgent","cozy","vegetarian","treat"] },
+  /* ── BREADS ── */
+  { id:20, cat:"bread",   name:"Garlic & Herb Naan",          img:"🫓", price:"£4",
+    desc:"Tandoor-blistered naan, roasted garlic, herb butter, nigella seeds",
+    tags:["vegetarian","buttery","garlic","classic","sharing","warm","side"] },
+  { id:21, cat:"bread",   name:"Stuffed Keema Paratha",       img:"🥙", price:"£6",
+    desc:"Whole-wheat paratha filled with spiced lamb mince, yoghurt dip",
+    tags:["meaty","spicy","dry","filling","classic","meat","side"] },
+  { id:22, cat:"bread",   name:"Missi Roti",                  img:"🍞", price:"£4",
+    desc:"Chickpea flour flatbread, carom seeds, fenugreek, butter",
+    tags:["vegetarian","vegan","earthy","rustic","classic","side","light"] },
+  { id:23, cat:"bread",   name:"Peshwari Naan",               img:"🫓", price:"£5",
+    desc:"Tandoor naan stuffed with coconut, almond, sultana, honey drizzle",
+    tags:["sweet","vegetarian","indulgent","warm","coconut","treat","side"] },
+  /* ── STARTERS & SIDES ── */
+  { id:24, cat:"other",   name:"Smoked Aubergine Mash",       img:"🍆", price:"£11",
+    desc:"Open-flame roasted aubergine, tahini, crispy chickpeas, za'atar oil",
+    tags:["vegan","smoky","earthy","light","healthy","sharing","side"] },
+  { id:25, cat:"other",   name:"Crispy Lentil Fritters",      img:"🥗", price:"£9",
+    desc:"Yellow lentil cakes, tamarind chutney, coriander yoghurt",
+    tags:["vegan","light","crispy","sharing","fun","casual","side","starter"] },
+  { id:26, cat:"other",   name:"Prawn Puri",                  img:"🍤", price:"£12",
+    desc:"Spiced tiger prawns, light puffed puri, coriander chutney",
+    tags:["spicy","seafood","fish","light","crispy","starter","lively","sharing"] },
+  { id:27, cat:"other",   name:"Seekh Kebab Platter",         img:"🫕", price:"£14",
+    desc:"Mixed lamb & chicken kebabs, four chutneys, sliced salad",
+    tags:["meaty","spicy","dry","grilled","sharing","bold","starter","meat"] },
+  { id:28, cat:"other",   name:"Papdi Chaat",                 img:"🥣", price:"£8",
+    desc:"Crispy wafers, whipped yoghurt, tamarind, pomegranate, sev",
+    tags:["vegetarian","tangy","crispy","light","fun","sharing","starter","fresh"] },
+];
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   END MENU DATABASE
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+// Hidden items set (toggled in editor)
+let hiddenIds = new Set();
+// Active menu = only visible items
+function activeMenu() { return MENU.filter(m => !hiddenIds.has(m.id)); }
+
+
+/* ══════════════════════════════
+   QUIZ QUESTIONS
+══════════════════════════════ */
+const ALL_QUESTIONS = [
+  { id:"cat", emoji:"🍽️", q:"What are you in the mood for?", sub:"Select all that apply", multi:true,
+    opts:[
+      { l:"🍛 A proper main course",  w:{want_main:5} },
+      { l:"🥙 Starters or sides",     w:{want_other:5} },
+      { l:"🫓 Some bread",            w:{want_bread:4} },
+      { l:"🍮 Something sweet",       w:{want_dessert:5,sweet:4,indulgent:2} },
+      { l:"🥂 A drink to go with it", w:{want_drink:4} },
+    ]},
+  { id:"diet", emoji:"🥗", q:"Any dietary preferences?", sub:"",
+    opts:[
+      { l:"Meat — no limits",   w:{meaty:5,meat:5} },
+      { l:"Fish or seafood",    w:{fish:4,seafood:4,coastal:2} },
+      { l:"Vegetarian",         w:{vegetarian:5} },
+      { l:"Vegan",              w:{vegan:6,earthy:1} },
+    ]},
+  { id:"texture", emoji:"🍜", q:"How do you like your food?", sub:"Think about texture and format",
+    cond: s=>(s.want_main||0)>0||(s.want_other||0)>0,
+    opts:[
+      { l:"🍲 Saucy & rich",         w:{saucy:5,brothy:2,rich:2} },
+      { l:"🥘 Slow-cooked & brothy", w:{brothy:6,saucy:2,comfort:3} },
+      { l:"🔥 Dry & chargrilled",    w:{dry:5,grilled:4,bold:2} },
+      { l:"🥗 Light & fresh",        w:{light:5,fresh:4,dry:1} },
+    ]},
+  { id:"spice", emoji:"🌶️", q:"How do you feel about spice?", sub:"",
+    cond: s=>(s.want_main||0)>0||(s.want_other||0)>0,
+    opts:[
+      { l:"Blaze of glory 🔥",       w:{spicy:6} },
+      { l:"Medium kick",             w:{spicy:3,zesty:1} },
+      { l:"Very mild",               w:{calm:4,mild:3} },
+      { l:"None at all",             w:{calm:5,mild:5,light:1} },
+    ]},
+  { id:"hunger", emoji:"🌙", q:"What kind of evening is this?", sub:"",
+    opts:[
+      { l:"Full feast — go all out", w:{heavy:5,hearty:4,rich:2,indulgent:2} },
+      { l:"Good dinner, nothing mad",w:{hearty:3,comfort:2} },
+      { l:"Light bite, easy night",  w:{light:5,sharing:3} },
+      { l:"Special treat tonight",   w:{treat:5,indulgent:4,elegant:2} },
+    ]},
+];
+
+/* ══════════════════════════════
+   APPLY BRANDING
+══════════════════════════════ */
+function applyBranding(b) {
+  document.getElementById('home-name').textContent    = b.name;
+  document.getElementById('home-tagline').textContent = b.tagline;
+  document.getElementById('home-kicker').textContent  = b.kicker;
+  document.title = b.name;
+
+  const emojiEl = document.getElementById('home-logo-emoji');
+  const imgEl   = document.getElementById('home-logo-img');
+
+  if (b.logoImage) {
+    imgEl.src = b.logoImage;
+    imgEl.style.display = 'block';
+    emojiEl.style.display = 'none';
+  } else {
+    emojiEl.textContent  = b.logoEmoji;
+    emojiEl.style.display = 'block';
+    imgEl.style.display = 'none';
+  }
+
+  document.documentElement.style.setProperty('--primary', b.primaryColor||'#D4963A');
+  document.documentElement.style.setProperty('--accent',  b.accentColor||'#E8C87A');
+  document.documentElement.style.setProperty('--accent2', b.accent2Color||'#B05A2F');
+  document.documentElement.style.setProperty('--bg',      b.bgColor||'#0C0A08');
+}
+applyBranding(BRANDING);
+
+/* ══════════════════════════════
+   ROUTER
+══════════════════════════════ */
+const bk = document.getElementById('bk');
+function go(id, showBack=true) {
+  document.querySelectorAll('.scr').forEach(s=>{
+    if (s.classList.contains('active')) {
+      s.classList.add('out');
+      setTimeout(()=>s.classList.remove('active','out'),450);
+    }
+  });
+  setTimeout(()=>{ const el=document.getElementById(id); el.scrollTop=0; el.classList.add('active'); },55);
+  bk.classList.toggle('show', showBack && id!=='home');
+}
+bk.onclick = ()=>go('home',false);
+document.getElementById('btn-home-r').onclick = ()=>go('home',false);
+document.getElementById('btn-home-s').onclick = ()=>go('home',false);
+document.getElementById('btn-quiz').onclick    = startQuiz;
+document.getElementById('btn-surprise').onclick= ()=>go('surp-pick');
+document.getElementById('btn-redo').onclick    = startQuiz;
+document.getElementById('btn-diff-cat').onclick= ()=>go('surp-pick');
+
+/* ══════════════════════════════
+   SURPRISE
+══════════════════════════════ */
+let surpriseCat = 'all';
+document.querySelectorAll('.cat-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{ surpriseCat=btn.dataset.cat; go('surp-res'); rollSurprise(); });
+});
+document.getElementById('btn-reroll').onclick = rollSurprise;
+
+function rollSurprise(){
+  const cards=document.getElementById('sr-cards'), head=document.getElementById('sr-head');
+  cards.innerHTML=''; head.textContent='Choosing…';
+  const pool = surpriseCat==='all' ? activeMenu() : activeMenu().filter(m=>m.cat===surpriseCat);
+  if(!pool.length){ head.textContent='Nothing here yet!'; return; }
+  setTimeout(()=>{
+    const pick=pool[Math.floor(Math.random()*pool.length)];
+    const labels={main:'Main Course',drink:'Drink',dessert:'Dessert',bread:'Bread',other:'Starter / Side'};
+    head.textContent="Tonight's pick ✦";
+    cards.innerHTML=buildMiniCard(pick, labels[pick.cat]||pick.cat);
+    boom();
+  },700);
+}
+
+function buildMiniCard(item, catLabel){
+  const imgHtml = item.img.startsWith('http')||item.img.startsWith('data')
+    ? `<img src="${item.img}" alt=""/>` : item.img;
+  return `<div class="mini-card"><div class="mc-inner">
+    <div class="mc-img">${imgHtml}</div>
+    <div class="mc-body">
+      <div class="mc-cat">${catLabel}</div>
+      <div class="mc-name">${item.name}</div>
+      <div class="mc-desc">${item.desc}</div>
+      <div class="mc-price">${item.price}</div>
+    </div></div></div>`;
+}
+
+/* ══════════════════════════════
+   QUIZ
+══════════════════════════════ */
+let step=0, scores={}, chosenOpts=[], activeQuestions=[];
+function startQuiz(){ step=0; scores={}; chosenOpts=[]; activeQuestions=ALL_QUESTIONS.slice(); go('quiz'); renderQ(); }
+
+function getVisible(){ return activeQuestions.filter(q=>!q.cond||q.cond(scores)).slice(0,5); }
+
+function renderQ(){
+  const vis=getVisible();
+  if(step>=vis.length){ finishQuiz(); return; }
+  const q=vis[step], total=vis.length;
+  chosenOpts=[];
+  document.getElementById('qnext').classList.remove('ready');
+  document.getElementById('qcount').textContent=`${step+1} / ${total}`;
+  document.getElementById('qfill').style.width=`${((step+1)/total)*100}%`;
+  document.getElementById('qemoji').textContent=q.emoji;
+  document.getElementById('qtxt').textContent=q.q;
+  document.getElementById('qsub').textContent=q.sub||'';
+  document.getElementById('qnext').textContent=step<total-1?'Continue →':'Show My Match ✦';
+  const sk=document.getElementById('skip-link');
+  sk.style.display=q.skip===false?'none':'block';
+  sk.onclick=()=>advance();
+  const grid=document.getElementById('qopts');
+  grid.className='ogrid'+(q.opts.length<=2?' single':'');
+  grid.innerHTML='';
+  q.opts.forEach(opt=>{
+    const b=document.createElement('button'); b.className='opt'; b.textContent=opt.l;
+    b.addEventListener('click',()=>{
+      if(q.multi){
+        b.classList.toggle('multi-chosen');
+        if(b.classList.contains('multi-chosen')) chosenOpts.push(opt);
+        else chosenOpts=chosenOpts.filter(x=>x!==opt);
+        document.getElementById('qnext').classList.toggle('ready',chosenOpts.length>0);
+      } else {
+        grid.querySelectorAll('.opt').forEach(x=>x.classList.remove('chosen'));
+        b.classList.add('chosen'); chosenOpts=[opt];
+        document.getElementById('qnext').classList.add('ready');
+      }
+    });
+    grid.appendChild(b);
+  });
+}
+document.getElementById('qnext').onclick=()=>{ if(chosenOpts.length) advance(); };
+function advance(){
+  chosenOpts.forEach(o=>Object.entries(o.w).forEach(([k,v])=>{ scores[k]=(scores[k]||0)+v; }));
+  step++; renderQ();
+}
+function finishQuiz(){ showResult(recommend(scores)); }
+
+function recommend(sc){
+  const wantMain=(sc.want_main||0)>0, wantOther=(sc.want_other||0)>0;
+  const wantDessert=(sc.want_dessert||0)>0&&!wantMain&&!wantOther;
+  const wantBread=(sc.want_bread||0)>0&&!wantMain&&!wantOther;
+  let pool;
+  if(wantDessert) pool=activeMenu().filter(m=>m.cat==='dessert');
+  else if(wantBread) pool=activeMenu().filter(m=>m.cat==='bread');
+  else if(wantOther) pool=activeMenu().filter(m=>m.cat==='other'||m.cat==='main');
+  else pool=activeMenu().filter(m=>m.cat==='main');
+  if(!pool.length) pool=activeMenu();
+  let best=null,top=-1;
+  pool.forEach(item=>{
+    let s=0; item.tags.forEach(t=>{ if(sc[t]) s+=sc[t]; });
+    if(sc[item.diet]) s+=sc[item.diet]*2;
+    if(s>top){top=s;best=item;}
+  });
+  const maxP=Object.values(sc).reduce((a,b)=>a+b,0)*1.3;
+  const pct=Math.min(99,Math.max(74,Math.round(top/maxP*130)));
+  return {item:best,pct,addons:getPairings(best,sc)};
+}
+
+function getPairings(main,sc){
+  const pairs=[];
+  const pickBest=(arr)=>{ let b=null,bs=-1; arr.forEach(d=>{ let s=0; d.tags.forEach(t=>{if(sc[t])s+=sc[t];if(main&&main.tags&&main.tags.includes(t))s+=2;}); if(s>bs){bs=s;b=d;} }); return b; };
+  if((sc.want_drink||0)>0){ const b=pickBest(activeMenu().filter(m=>m.cat==='drink')); if(b)pairs.push(b); }
+  if((sc.want_bread||0)>0){ const b=pickBest(activeMenu().filter(m=>m.cat==='bread')); if(b)pairs.push(b); }
+  if((sc.want_dessert||0)>0){ const b=pickBest(activeMenu().filter(m=>m.cat==='dessert')); if(b)pairs.push(b); }
+  if((sc.want_other||0)>0&&main&&main.cat==='main'){ const b=pickBest(activeMenu().filter(m=>m.cat==='other')); if(b)pairs.push(b); }
+  return pairs;
+}
+
+function showResult({item,pct,addons}){
+  if(!item){go('result');return;}
+  const isImgUrl=item.img.startsWith('http')||item.img.startsWith('data');
+  const ri=document.getElementById('rimg');
+  if(isImgUrl){ ri.innerHTML=`<img src="${item.img}" alt="" style="width:100%;height:100%;object-fit:cover"/>`; }
+  else { ri.textContent=item.img; }
+  document.getElementById('rname').textContent=item.name;
+  document.getElementById('rdesc').textContent=item.desc;
+  document.getElementById('rprice').textContent=item.price;
+  document.getElementById('rpct').textContent=`${pct}% match`;
+  document.getElementById('rtags').innerHTML=item.tags.slice(0,5).map(t=>`<span class="pill">${t}</span>`).join('');
+  const addSec=document.getElementById('addon-section'), addCards=document.getElementById('addon-cards');
+  const labels={main:'Main Course',drink:'Drink',dessert:'Dessert',bread:'Bread',other:'Side'};
+  if(addons&&addons.length){ addCards.innerHTML=addons.map(a=>buildMiniCard(a,labels[a.cat]||a.cat)).join(''); addSec.style.display='block'; }
+  else addSec.style.display='none';
+  go('result'); boom();
+}
+
+/* ══════════════════════════════
+   EDITOR — open/close
+══════════════════════════════ */
+const editorEl = document.getElementById('editor');
+document.getElementById('editor-fab').onclick = ()=>{ editorEl.classList.add('open'); renderDragList(); };
+document.getElementById('ed-close').onclick   = ()=>{ editorEl.classList.remove('open'); };
+
+/* Tab switching */
+document.querySelectorAll('.ed-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.ed-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-brand').style.display = tab.dataset.tab==='brand'?'block':'none';
+    document.getElementById('tab-menu').style.display  = tab.dataset.tab==='menu'?'block':'none';
+    if(tab.dataset.tab==='menu') renderDragList();
+  });
+});
+
+/* ── BRANDING TAB ── */
+
+// Emoji picker
+const emojiPickerEl = document.getElementById('emoji-picker');
+const EMOJIS = ['🪔','🔥','🍽️','🌿','🫕','🥘','🍜','🫙','⭐','🌙','🌺','🏮','🧿','🦚','🌊','🍁','✨','🦋'];
+emojiPickerEl.innerHTML = '';
+EMOJIS.forEach(e=>{
+  const btn=document.createElement('button');
+  btn.className='emoji-opt'; btn.textContent=e;
+  if(e===BRANDING.logoEmoji) btn.classList.add('picked');
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.emoji-opt').forEach(b=>b.classList.remove('picked'));
+    btn.classList.add('picked');
+    BRANDING.logoEmoji=e; BRANDING.logoImage='';
+    // update preview
+    document.getElementById('logo-preview-circle').textContent=e;
+    document.getElementById('logo-preview-circle').style.fontSize='2.2rem';
+    // clear uploaded img
+    document.getElementById('btn-remove-logo').style.display='none';
+  });
+  emojiPickerEl.appendChild(btn);
+});
+
+// Logo upload
+const dropZone  = document.getElementById('logo-drop-zone');
+const fileInput = document.getElementById('logo-file-input');
+const previewEl = document.getElementById('logo-preview-circle');
+
+document.getElementById('btn-pick-logo').onclick = ()=>fileInput.click();
+
+fileInput.addEventListener('change', e=>{ if(e.target.files[0]) handleLogoFile(e.target.files[0]); });
+
+dropZone.addEventListener('dragover', e=>{ e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', ()=>dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e=>{
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  if(e.dataTransfer.files[0]) handleLogoFile(e.dataTransfer.files[0]);
+});
+
+function handleLogoFile(file){
+  if(!file.type.startsWith('image/')) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const dataUrl=ev.target.result;
+    BRANDING.logoImage=dataUrl;
+    previewEl.innerHTML=`<img src="${dataUrl}" alt="logo" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`;
+    previewEl.style.fontSize='unset';
+    document.getElementById('btn-remove-logo').style.display='flex';
+  };
+  reader.readAsDataURL(file);
+}
+
+document.getElementById('btn-remove-logo').onclick = ()=>{
+  BRANDING.logoImage='';
+  fileInput.value='';
+  previewEl.innerHTML=BRANDING.logoEmoji;
+  previewEl.style.fontSize='2.2rem';
+  document.getElementById('btn-remove-logo').style.display='none';
+};
+
+// Save branding
+document.getElementById('btn-save-brand').onclick = ()=>{
+  BRANDING.name    = document.getElementById('ed-name').value.trim()||BRANDING.name;
+  BRANDING.tagline = document.getElementById('ed-tagline').value.trim()||BRANDING.tagline;
+  BRANDING.kicker  = document.getElementById('ed-kicker').value.trim()||BRANDING.kicker;
+  applyBranding(BRANDING);
+  showToast('Branding updated ✓');
+};
+
+/* ══════════════════════════════
+   EDITOR — MENU / DRAG LIST
+══════════════════════════════ */
+let menuFilter = 'all';
+let dragSrcId  = null;
+
+document.querySelectorAll('.filter-pill').forEach(p=>{
+  p.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active'); menuFilter=p.dataset.filter; renderDragList();
+  });
+});
+
+function renderDragList(){
+  const list=document.getElementById('drag-list');
+  const items=menuFilter==='all' ? MENU : MENU.filter(m=>m.cat===menuFilter);
+  list.innerHTML='';
+  if(!items.length){ list.innerHTML=`<p style="color:var(--dim);font-size:.82rem;text-align:center;padding:1rem">No items in this category yet.</p>`; return; }
+
+  items.forEach(item=>{
+    const div=document.createElement('div');
+    div.className='drag-item'+(hiddenIds.has(item.id)?' hidden-item':'');
+    div.dataset.id=item.id;
+    div.draggable=true;
+
+    const isImg=item.img.startsWith('http')||item.img.startsWith('data');
+    const imgHtml=isImg?`<img src="${item.img}" alt=""/>`:`${item.img}`;
+
+    div.innerHTML=`
+      <div class="drag-handle"><span></span><span></span><span></span></div>
+      <div class="di-img">${imgHtml}</div>
+      <div class="di-body">
+        <div class="di-name">${item.name}</div>
+        <div class="di-meta">${item.price}<span class="di-badge">${item.cat}</span></div>
+      </div>
+      <div class="di-actions">
+        <label class="di-toggle" title="Show / Hide">
+          <input type="checkbox" ${hiddenIds.has(item.id)?'':'checked'} data-id="${item.id}"/>
+          <span class="di-toggle-slider"></span>
+        </label>
+        <button class="di-btn del" data-id="${item.id}" title="Delete">🗑</button>
+      </div>`;
+
+    // Toggle visibility
+    div.querySelector('input[type=checkbox]').addEventListener('change', e=>{
+      const id=parseInt(e.target.dataset.id);
+      if(e.target.checked) hiddenIds.delete(id); else hiddenIds.add(id);
+      div.classList.toggle('hidden-item',!e.target.checked);
+      showToast(e.target.checked?'Item shown':'Item hidden');
+    });
+
+    // Delete
+    div.querySelector('.di-btn.del').addEventListener('click', e=>{
+      e.stopPropagation();
+      const id=parseInt(e.target.dataset.id);
+      if(confirm(`Remove "${item.name}" from the menu?`)){ MENU=MENU.filter(m=>m.id!==id); renderDragList(); showToast('Item removed'); }
+    });
+
+    // Drag events
+    div.addEventListener('dragstart', e=>{ dragSrcId=item.id; setTimeout(()=>div.classList.add('dragging'),0); e.dataTransfer.effectAllowed='move'; });
+    div.addEventListener('dragend',   ()=>{ div.classList.remove('dragging'); document.querySelectorAll('.drag-item').forEach(d=>d.classList.remove('drag-over-top','drag-over-bottom')); });
+    div.addEventListener('dragover',  e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move';
+      document.querySelectorAll('.drag-item').forEach(d=>d.classList.remove('drag-over-top','drag-over-bottom'));
+      const rect=div.getBoundingClientRect(), mid=rect.top+rect.height/2;
+      div.classList.add(e.clientY<mid?'drag-over-top':'drag-over-bottom'); });
+    div.addEventListener('drop', e=>{ e.preventDefault();
+      if(dragSrcId===item.id) return;
+      const rect=div.getBoundingClientRect(), mid=rect.top+rect.height/2, before=e.clientY<mid;
+      const srcIdx=MENU.findIndex(m=>m.id===dragSrcId);
+      const tgtIdx=MENU.findIndex(m=>m.id===item.id);
+      if(srcIdx<0||tgtIdx<0) return;
+      const [moved]=MENU.splice(srcIdx,1);
+      const newIdx=MENU.findIndex(m=>m.id===item.id);
+      MENU.splice(before?newIdx:newIdx+1,0,moved);
+      renderDragList(); showToast('Order updated ✓');
+    });
+
+    list.appendChild(div);
+  });
+}
+
+// Add new item
+document.getElementById('btn-add-item').onclick=()=>{ document.getElementById('add-item-form').classList.add('open'); document.getElementById('btn-add-item').style.display='none'; };
+document.getElementById('btn-cancel-item').onclick=()=>{ document.getElementById('add-item-form').classList.remove('open'); document.getElementById('btn-add-item').style.display='flex'; clearAddForm(); };
+
+document.getElementById('btn-save-item').onclick=()=>{
+  const name=document.getElementById('new-name').value.trim();
+  const price=document.getElementById('new-price').value.trim();
+  const desc=document.getElementById('new-desc').value.trim();
+  const img=document.getElementById('new-img').value.trim()||'🍽️';
+  const cat=document.getElementById('new-cat').value;
+  const tags=document.getElementById('new-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  if(!name){ showToast('Please enter a name'); return; }
+  const newId=Math.max(0,...MENU.map(m=>m.id))+1;
+  MENU.push({id:newId,cat,name,img,price:price||'—',desc:desc||'',tags,diet:'vegetarian'});
+  document.getElementById('add-item-form').classList.remove('open');
+  document.getElementById('btn-add-item').style.display='flex';
+  clearAddForm(); renderDragList(); showToast(`"${name}" added ✓`);
+};
+function clearAddForm(){ ['new-name','new-price','new-desc','new-img','new-tags'].forEach(id=>document.getElementById(id).value=''); }
+
+/* ══════════════════════════════
+   TOAST
+══════════════════════════════ */
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ══════════════════════════════
+   CONFETTI
+══════════════════════════════ */
+function boom(){
+  const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+  cv.width=window.innerWidth;cv.height=window.innerHeight;
+  const cols=['#D4963A','#E8C87A','#B05A2F','#F2EAD8','#916030','#fff'];
+  const p=Array.from({length:80},()=>({x:Math.random()*cv.width,y:-10-Math.random()*90,w:Math.random()*9+3,h:Math.random()*5+2,c:cols[~~(Math.random()*cols.length)],r:Math.random()*360,dr:(Math.random()-.5)*7,dy:Math.random()*3.5+1.5,dx:(Math.random()-.5)*1.5}));
+  let t=0;(function draw(){ctx.clearRect(0,0,cv.width,cv.height);p.forEach(q=>{ctx.save();ctx.translate(q.x+q.w/2,q.y+q.h/2);ctx.rotate(q.r*Math.PI/180);ctx.fillStyle=q.c;ctx.beginPath();ctx.roundRect(-q.w/2,-q.h/2,q.w,q.h,2);ctx.fill();ctx.restore();q.y+=q.dy;q.x+=q.dx;q.r+=q.dr;});t++;if(t<130)requestAnimationFrame(draw);else ctx.clearRect(0,0,cv.width,cv.height);})();
+}
+</script>
+</body>
+</html>
